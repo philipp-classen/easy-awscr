@@ -1,0 +1,9 @@
+name: easy-awscr
+version: 0.1.0
+
+authors:
+  - Philipp Claßen <philipp.classen@posteo.com>
+
+crystal: '>= 1.12.2'
+
+license: MIT
