@@ -184,11 +184,9 @@ module EasyAwscr::S3
     end
 
     private def try_with_refresh(&)
-      begin
-        yield client
-      rescue Awscr::S3::ExpiredToken
-        yield client(force_new: true)
-      end
+      yield client
+    rescue Awscr::S3::ExpiredToken
+      yield client(force_new: true)
     end
 
     private def client(*, force_new = false) : Awscr::S3::Client
