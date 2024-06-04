@@ -1,13 +1,13 @@
 # easy-awscr
 
-A Crystal shared intendend to provide basic AWS functionality:
+A Crystal shard intended to provide basic AWS functionality:
 * S3 (based on [awscr-s3](https://github.com/taylorfinnell/awscr-s3))
 * Credentials (based on [aws-credentials](https://github.com/y2k2mt/aws-credentials.cr))
 
 The idea is to simply the setup:
 * It should work out of the box
 * The library should take care of acquiring and refreshing AWS credentials
-* (needed for now) include open pull requests that provide missing features and bug fixes
+* (currently needed) include open pull requests that provide missing features and bug fixes
 
 It is not intended to be feature-rich, but rather to put the existing pieces together.
 Currently, it is expected to work on an EC2 instance (using IAM roles); or in a local setup
