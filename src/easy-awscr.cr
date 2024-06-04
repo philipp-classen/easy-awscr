@@ -1,6 +1,5 @@
-# TODO: Write documentation for `Easy::Awscr`
-module Easy::Awscr
-  VERSION = "0.1.0"
+require "./easy-awscr/*"
 
-  # TODO: Put your code here
+module EasyAwscr
+  VERSION = "0.1.0"
 end

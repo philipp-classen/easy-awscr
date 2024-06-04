@@ -6,4 +6,12 @@ authors:
 
 crystal: '>= 1.12.2'
 
+dependencies:
+  aws-credentials:
+    github: philipp-classen/aws-credentials.cr
+    commit: 2cccc41944b6a206de68f2b8f7cf5e11efae6476
+  awscr-s3:
+    github: philipp-classen/awscr-s3
+    commit: 7b1c50aa66a404159f67ed62131329f4ae3c33c3
+
 license: MIT
