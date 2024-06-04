@@ -60,8 +60,9 @@ client.delete_bucket(test_bucket)
 
 The bulk of the work is done by the libraries `aws-credentials.cr` and `awscr-s3`.
 However, the development is somewhat fragmented at the moment. Thus, I based on the
-`NeuraLegion/awscr-s3` and `NeuraLegion/aws-credentials.cr` forks, and included
-some smaller bug fixes from other pull requests.
+[NeuraLegion/awscr-s3](https://github.com/NeuraLegion/awscr-s3) and
+[NeuraLegion/aws-credentials.cr](https://github.com/NeuraLegion/aws-credentials.cr) forks,
+and included some smaller bug fixes from other pull requests.
 
 This may change. I would prefer to adopt the original library. But until then, it is
 easier to get a local repository since it allows to merge fixes immediately instead
