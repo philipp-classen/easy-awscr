@@ -46,8 +46,12 @@ client.put_object(test_bucket, "some_file", "Yes, it worked!")
 content = client.get_object(test_bucket, "some_file").body
 puts "Did it work? #{content}"
 
-all_files = client.list_objects(test_bucket).each &.contents.map(&.key)
-puts "Files: #{all_files}"
+# list all files (optionally you can filter with `prefix` and limit with `max_keys`)
+all_files = [] of String
+client.list_objects(test_bucket).each do |batch|
+  all_files.concat(batch.contents.map &.key)
+end
+p! all_files
 
 # delete the file
 client.delete_object(test_bucket, "some_file")
