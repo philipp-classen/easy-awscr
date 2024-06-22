@@ -4,7 +4,7 @@ A Crystal shard intended to provide basic AWS functionality:
 * S3 (based on [awscr-s3](https://github.com/taylorfinnell/awscr-s3))
 * Credentials (based on [aws-credentials](https://github.com/y2k2mt/aws-credentials.cr))
 
-The idea is to simply the setup:
+The idea is to simplify the setup:
 * It should work out of the box
 * The library should take care of acquiring and refreshing AWS credentials
 * (currently needed) include open pull requests that provide missing features and bug fixes
@@ -63,16 +63,11 @@ client.delete_bucket(test_bucket)
 ## Development
 
 The bulk of the work is done by the libraries `aws-credentials.cr` and `awscr-s3`.
-However, the development is somewhat fragmented at the moment. Thus, I based on the
-[NeuraLegion/awscr-s3](https://github.com/NeuraLegion/awscr-s3) and
-[NeuraLegion/aws-credentials.cr](https://github.com/NeuraLegion/aws-credentials.cr) forks,
-and included some smaller bug fixes from other pull requests.
 
-This may change. I would prefer to adopt the original library. But until then, it is
-easier to get a local repository since it allows to merge fixes immediately instead
-of waiting:
+I would prefer to adopt the original library. But until then, it is easier to get
+a local repository since it allows to merge fixes immediately instead of waiting:
 
-* https://github.com/philipp-classen/aws-credentials.cr/
+* https://github.com/philipp-classen/aws-credentials.cr/tree/fixes
 * https://github.com/philipp-classen/awscr-s3/tree/fixes
 
 ## Contributing
