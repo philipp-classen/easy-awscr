@@ -12,6 +12,6 @@ dependencies:
     branch: fixes
   awscr-s3:
     github: philipp-classen/awscr-s3
-    branch: fixes
+    branch: experimental_fixes
 
 license: MIT
