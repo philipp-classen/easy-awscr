@@ -42,18 +42,18 @@ else
 end
 
 # upload text and read the content again
-# Note: Crystal uses Int32 for buffer (works under 2gb)
+# Note: Crystal uses Int32 for strings and arrays. It will work up to around 2gb.
 client.put_object(test_bucket, "some_file", "Yes, it worked!")
 content = client.get_object(test_bucket, "some_file").body
 puts "Did it work? #{content}"
 
-# Otherwise, do this to upload a large file ...
+# Otherwise, can upload a large file like this ...
 File.open("/path/some/big/file_over_4gb.txt") do |io|
   success = client.upload_file("bucket1", "obj", io)
   p success # => true
 end
 
-# ... and download it again
+# ... and download it again by streaming into a file again.
 File.open("/path/some/big/file-downloaded.txt", "w") do |io|
   client.get_object(test_bucket, "some_file") do |resp|
 	IO.copy(resp.body_io, io)
