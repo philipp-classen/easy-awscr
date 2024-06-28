@@ -38,7 +38,7 @@ client.put_bucket(test_bucket)
 if client.list_buckets.buckets.includes?(test_bucket)
   puts "Found!"
 else
-  puts "Something went wrong"
+  raise "Something went wrong"
 end
 
 # upload text and read the content again
