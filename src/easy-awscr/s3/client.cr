@@ -154,8 +154,12 @@ module EasyAwscr::S3
     #   IO.copy(resp.body_io, STDOUT) # => "MY DATA"
     # end
     # ```
-    def get_object(bucket, object : String, headers = Hash(String, String).new)
-      try_with_refresh &.get_object(bucket, object, headers)
+    def get_object(bucket, object : String, headers = Hash(String, String).new, &)
+      try_with_refresh do |client|
+        client.get_object(bucket, object, headers) do |resp|
+          yield resp
+        end
+      end
     end
 
     # Get the metadata of an object in a bucket
