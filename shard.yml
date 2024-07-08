@@ -4,7 +4,7 @@ version: 0.2.0
 authors:
   - Philipp Claßen <philipp.classen@posteo.com>
 
-crystal: '>= 1.12.2'
+crystal: '>= 1.11.0'
 
 dependencies:
   aws-credentials:
