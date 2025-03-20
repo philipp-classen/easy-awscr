@@ -69,7 +69,7 @@ module EasyAwscr::S3
     # resp = client.complete_multipart_upload("bucket1", "obj", "123", parts)
     # p resp.key # => obj
     # ```
-    def complete_multipart_upload(bucket : String, object : String, upload_id : String, parts : Array(Response::UploadPartOutput))
+    def complete_multipart_upload(bucket : String, object : String, upload_id : String, parts : Array(Awscr::S3::Response::UploadPartOutput))
       try_with_refresh &.complete_multipart_upload(bucket, object, upload_id, parts)
     end
 
