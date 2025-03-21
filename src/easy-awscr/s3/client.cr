@@ -1,8 +1,13 @@
 require "awscr-s3"
+require "./internals/async_chunk_uploader"
 
 module EasyAwscr::S3
   class Client
     @s3_client : Awscr::S3::Client?
+
+    # This is a hard limit enforced by AWS for multipart uploads:
+    # each part must be at least 5 MB.
+    MINIMUM_PART_SIZE_5MB = 5242880
 
     def initialize(*,
                    @region = EasyAwscr::Config.default_region!,
@@ -207,6 +212,49 @@ module EasyAwscr::S3
         options = Awscr::S3::FileUploader::Options.new(with_content_type, simultaneous_parts)
         uploader = Awscr::S3::FileUploader.new(client, options)
         uploader.upload(bucket, object, io, headers)
+      end
+    end
+
+    # Provides `IO` that can be used to stream directly into an S3 file. In contrast
+    # to `upload_file`, the size of the data does not have to be known before.
+    # It will use `start_multipart_upload`, `upload_part`, and `complete_multipart_upload`
+    # internally.
+    #
+    # Example: creates a file on S3
+    #
+    # ```
+    # client.stream_to_s3("bucket1", "obj") do |io|
+    #   io << ...
+    # end
+    # ```
+    #
+    # Intuitively, it is like writing to a local file, matching this pattern:
+    # ```
+    # File.open("/tmp/bucket1/obj", "w") do |io|
+    #   io << ...
+    # end
+    # ```
+    #
+    # If you need more control, you can also get direct access to the `IO` object:
+    #
+    # ```
+    # io = client.stream_to_s3("bucket1", "obj", auto_close: false) { |io| io }
+    # io << ...
+    # io.close
+    # ```
+    def stream_to_s3(bucket : String, object : String, *,
+                     headers = Hash(String, String).new, part_size = MINIMUM_PART_SIZE_5MB,
+                     max_workers = 8, auto_close = true, &)
+      if part_size < MINIMUM_PART_SIZE_5MB
+        raise IO::Error.new "AWS enforces a minimum part size of 5 MB (got: #{part_size})"
+      end
+
+      upload_handler = Internals::AsyncChunkUploader.new(self, bucket, object, max_workers: max_workers)
+      io = Internals::ChunkedIO.new(part_size, upload_handler)
+      begin
+        yield io
+      ensure
+        io.close if auto_close
       end
     end
 
