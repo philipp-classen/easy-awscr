@@ -1,4 +1,5 @@
 require "awscr-s3"
+require "./internals/async_chunk_uploader"
 
 module EasyAwscr::S3
   class Client
@@ -207,6 +208,40 @@ module EasyAwscr::S3
         options = Awscr::S3::FileUploader::Options.new(with_content_type, simultaneous_parts)
         uploader = Awscr::S3::FileUploader.new(client, options)
         uploader.upload(bucket, object, io, headers)
+      end
+    end
+
+    # Provides `IO` that can be used to stream directly into an S3 file. In contrast
+    # to `upload_file`, the size of the data does not have to be known before.
+    # It will use `start_multipart_upload`, `upload_part`, and `complete_multipart_upload`
+    # internally.
+    #
+    # Example: creates a file on S3
+    #
+    # ```
+    # client.stream_to_s3("bucket1", "obj") do |io|
+    #   io << ...
+    # end
+    # ```
+    #
+    # Intuitively, it is like writing to a local file, matching this pattern:
+    # ```
+    # File.open("/tmp/bucket1/obj", "w") do |io|
+    #   io << ...
+    # end
+    # ```
+    #
+    # Warning: This function is still experimental. There is also no real error handling.
+    #
+    def stream_to_s3(bucket : String, object : String, *,
+                     headers = Hash(String, String).new, part_size = 5 * 1024 * 1024,
+                     max_workers = 8, auto_close = true, &)
+      upload_handler = Internals::AsyncChunkUploader.new(self, bucket, object, max_workers: max_workers)
+      io = Internals::ChunkedIO.new(part_size, upload_handler)
+      begin
+        yield io
+      ensure
+        io.close if auto_close
       end
     end
 
