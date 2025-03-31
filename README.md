@@ -87,12 +87,6 @@ client.delete_bucket(test_bucket)
 
 The bulk of the work is done by the libraries `aws-credentials.cr` and `awscr-s3`.
 
-I would prefer to adopt the original library. But until then, it is easier to get
-a local repository since it allows to merge fixes immediately instead of waiting:
-
-* https://github.com/philipp-classen/aws-credentials.cr/tree/fixes
-* https://github.com/philipp-classen/awscr-s3/tree/fixes
-
 ## Contributing
 
 1. Fork it (<https://github.com/philipp-classen/easy-awscr/fork>)
