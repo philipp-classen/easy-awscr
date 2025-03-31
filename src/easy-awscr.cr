@@ -1,7 +1,7 @@
 require "log"
 
 module EasyAwscr
-  VERSION = "0.1.0"
+  VERSION = {{ `shards version "#{__DIR__}"`.chomp.stringify }}
   Log     = ::Log.for("easy-awscr")
 end
 

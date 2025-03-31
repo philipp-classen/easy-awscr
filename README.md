@@ -7,7 +7,6 @@ A Crystal shard intended to provide basic AWS functionality:
 The idea is to simplify the setup:
 * It should work out of the box
 * The library should take care of acquiring and refreshing AWS credentials
-* (currently needed) include open pull requests that provide missing features and bug fixes
 
 It is not intended to be feature-rich, but rather to put the existing pieces together.
 Currently, it is expected to work on an EC2 instance (using IAM roles); or in a local setup
@@ -59,6 +58,16 @@ File.open("/path/some/big/file-downloaded.txt", "w") do |io|
 	IO.copy(resp.body_io, io)
   end
 end
+
+# If you do not know the size in advance, you can use the streaming API:
+client.stream_to_s3(test_bucket, "some_file") do |io|
+  io.puts "Some content"
+end
+
+# Or like this if you need more flexibility over the lifecycle:
+io = client.stream_to_s3(test_bucket, "some_file", auto_close: false) { |io| io }
+io.puts "Some content"
+io.close
 
 # list all files (optionally you can filter with `prefix` and limit with `max_keys`)
 all_files = [] of String
