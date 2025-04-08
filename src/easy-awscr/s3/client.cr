@@ -249,7 +249,7 @@ module EasyAwscr::S3
         raise IO::Error.new "AWS enforces a minimum part size of 5 MB (got: #{part_size})"
       end
 
-      upload_handler = Internals::AsyncChunkUploader.new(self, bucket, object, max_workers: max_workers)
+      upload_handler = Internals::AsyncChunkUploader.new(self, bucket, object, headers, max_workers: max_workers)
       io = Internals::ChunkedIO.new(part_size, upload_handler)
       begin
         yield io

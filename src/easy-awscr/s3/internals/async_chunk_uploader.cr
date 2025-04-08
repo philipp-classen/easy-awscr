@@ -33,7 +33,7 @@ module EasyAwscr::S3
         buffer_to_recycle = nil
 
         # 1) If there jobs ready, we should always collect them, just to reuse the buffer.
-        # 2) If we maxed out already the number# of jobs, then we also need to collect one job.
+        # 2) If we maxed out already the number of jobs, then we also need to collect one job.
         #
         # In the first case, it will not block. Only the second case will block (as intended to throttle).
         max_workers_reached = (pending_jobs + 1) == @max_workers
