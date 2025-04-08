@@ -23,8 +23,10 @@ module EasyAwscr::S3
       end
 
       def open : Nil
-        resp = @client.start_multipart_upload(@bucket, @object, @headers)
-        @upload_id = resp.upload_id
+        retry do
+          resp = @client.start_multipart_upload(@bucket, @object, @headers)
+          @upload_id = resp.upload_id
+        end
       end
 
       def write(buffer : IO::Memory) : IO::Memory?
@@ -46,12 +48,17 @@ module EasyAwscr::S3
 
         spawn do
           begin
-            resp = @client.upload_part(@bucket, @object, @upload_id, part_number, buffer)
+            resp = retry do
+              buffer.rewind
+              @client.upload_part(@bucket, @object, @upload_id, part_number, buffer)
+            end
             @jobs_finished.add(1)
             @job_results.send(JobResult.new(resp, buffer))
           rescue e
             if @job_results.close
-              Log.warn(exception: e) { "Unable to upload object s3://#{@bucket}/@{object}" }
+              Log.error(exception: e) { "Unable to upload object s3://#{@bucket}/#{@object}" }
+            else
+              Log.info { "Unable to upload object s3://#{@bucket}/#{@object} (see previous errors)" }
             end
           end
         end
@@ -77,9 +84,23 @@ module EasyAwscr::S3
           end
         end
 
-        @client.complete_multipart_upload(@bucket, @object, @upload_id, @uploaded_parts)
+        retry do
+          @client.complete_multipart_upload(@bucket, @object, @upload_id, @uploaded_parts)
+        end
       ensure
         @job_results.close
+      end
+
+      private def retry(max_attempts = 3, &)
+        attempt = 0
+        loop do
+          return yield
+        rescue e
+          raise e if attempt >= max_attempts
+          sleep attempt.seconds
+          attempt += 1
+          Log.warn(exception: e) { "Retrying operation (error: #{e})" }
+        end
       end
     end
   end
