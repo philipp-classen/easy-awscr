@@ -1,5 +1,5 @@
 name: easy-awscr
-version: 0.3.2
+version: 0.3.3
 
 authors:
   - Philipp Claßen <philipp.classen@posteo.com>
@@ -11,7 +11,7 @@ dependencies:
     github: y2k2mt/aws-credentials.cr
     commit: 8b1853609c069a1e70b967a7d654e07a0dbdbcfc
   awscr-s3:
-    github: philipp-classen/awscr-s3
-    branch: fixes_2025_04_09
+    github: taylorfinnell/awscr-s3
+    commit: 47c97e2f545ed5fead268a02b58501e0c968ec65
 
 license: MIT
