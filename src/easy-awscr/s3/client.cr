@@ -1,20 +1,32 @@
 require "awscr-s3"
+require "./internals/connection_pool"
 require "./internals/async_chunk_uploader"
 
 module EasyAwscr::S3
   class Client
     @s3_client : Awscr::S3::Client?
+    @client_factory : Internals::ConnectionPool?
 
     # This is a hard limit enforced by AWS for multipart uploads:
     # each part must be at least 5 MB.
     MINIMUM_PART_SIZE_5MB = 5242880
 
+    # From time to time, we should recreated the connection pool, so it will reload
+    # the SSL context (see https://github.com/crystal-lang/crystal/issues/15419).
+    DEFAULT_POOL_REFRESH_INTERVAL = 24.hours
+
     def initialize(*,
                    @region = EasyAwscr::Config.default_region!,
                    @credential_provider = EasyAwscr::Config.default_credential_provider,
                    lazy_init = false)
-      @mutex = Mutex.new
+      @mutex = Mutex.new(:unchecked)
       client unless lazy_init
+    end
+
+    private def create_connection_pool
+      # TODO: this uses the defaults, but it would make sense to
+      # let the user overwrite them.
+      Internals::ConnectionPool.new
     end
 
     # List s3 buckets
@@ -265,14 +277,31 @@ module EasyAwscr::S3
     end
 
     private def client(*, force_new = false) : Awscr::S3::Client
+      dead_client_factory = nil
       @mutex.synchronize do
         s3_client = @s3_client
-        if s3_client && !force_new
+        if s3_client && !force_new && !client_factory_needs_refresh?
           s3_client
         else
           cred = @credential_provider.credentials
-          @s3_client = Awscr::S3::Client.new(@region, cred.access_key_id, cred.secret_access_key, cred.session_token)
+
+          # refresh the connection pool (updates also the SSL context)
+          client_factory = create_connection_pool
+          dead_client_factory = @client_factory
+          @client_factory = client_factory
+
+          @s3_client = Awscr::S3::Client.new(@region, cred.access_key_id, cred.secret_access_key, cred.session_token, client_factory: client_factory)
         end
+      end
+    ensure
+      dead_client_factory.try &.close
+    end
+
+    private def client_factory_needs_refresh? : Bool
+      if cf = @client_factory
+        Time.utc - cf.created_at > DEFAULT_POOL_REFRESH_INTERVAL
+      else
+        false
       end
     end
   end
