@@ -61,7 +61,7 @@ module EasyAwscr::S3::Internals
     end
 
     def acquire_raw_client(endpoint : URI) : HTTP::Client
-      HTTP::Client.new(endpoint, tls: @tls)
+      HTTP::Client.new(endpoint, tls: endpoint.scheme == "https" ? @tls : nil)
     end
 
     def release(client : HTTP::Client?)

@@ -87,6 +87,22 @@ client.delete_bucket(test_bucket)
 
 The bulk of the work is done by the libraries `aws-credentials.cr` and `awscr-s3`.
 
+### How to run tests
+
+Run tests:
+
+```
+crystal spec --verbose --tag '~slow'
+```
+
+Run all tests, including slow, memory-intensive test:
+
+```
+crystal spec --verbose
+```
+
+Note: alias for these commands can also be found in the `Makefile` (e.g. `make test`).
+
 ## Contributing
 
 1. Fork it (<https://github.com/philipp-classen/easy-awscr/fork>)

@@ -18,9 +18,20 @@ module EasyAwscr::S3
     def initialize(*,
                    @region = EasyAwscr::Config.default_region!,
                    @credential_provider = EasyAwscr::Config.default_credential_provider,
+                   @endpoint : String? = nil,
                    lazy_init = false)
       @mutex = Mutex.new(:unchecked)
       client unless lazy_init
+    end
+
+    # Closes this client. If used again, a new connection will be opened.
+    def close
+      @mutex.synchronize do
+        @client_factory.try &.close
+      ensure
+        @s3_client = nil
+        @client_factory = nil
+      end
     end
 
     private def create_connection_pool
@@ -290,7 +301,14 @@ module EasyAwscr::S3
           dead_client_factory = @client_factory
           @client_factory = client_factory
 
-          @s3_client = Awscr::S3::Client.new(@region, cred.access_key_id, cred.secret_access_key, cred.session_token, client_factory: client_factory)
+          @s3_client = Awscr::S3::Client.new(
+            @region,
+            cred.access_key_id,
+            cred.secret_access_key,
+            cred.session_token,
+            endpoint: @endpoint,
+            client_factory: client_factory
+          )
         end
       end
     ensure
