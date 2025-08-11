@@ -6,7 +6,6 @@ module EasyAwscr::S3::Internals
 
     def initialize(*, @max_ttl : Time::Span? = 5.minutes, @max_size = 128)
       @pool = Hash(Fiber, {HTTP::Client, Time}).new
-      @tls = OpenSSL::SSL::Context::Client.new
       @mutex = Mutex.new(:unchecked)
       @closed = false
       @created_at = Time.utc
@@ -61,7 +60,7 @@ module EasyAwscr::S3::Internals
     end
 
     def acquire_raw_client(endpoint : URI) : HTTP::Client
-      HTTP::Client.new(endpoint, tls: endpoint.scheme == "https" ? @tls : nil)
+      HTTP::Client.new(endpoint)
     end
 
     def release(client : HTTP::Client?)
