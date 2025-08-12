@@ -66,6 +66,19 @@ def with_client(*, auto_close = true, & : EasyAwscr::S3::Client -> Nil)
   end
 end
 
+def with_native_awscr_s3_client(& : Awscr::S3::Client -> Nil)
+  with_aws_api do |api|
+    cred = api.credential_provider.credentials
+    yield Awscr::S3::Client.new(
+      api.region,
+      cred.access_key_id,
+      cred.secret_access_key,
+      cred.session_token,
+      endpoint: api.endpoint
+    )
+  end
+end
+
 class SafeKeyGen
   getter keys_used
 
@@ -277,6 +290,53 @@ describe EasyAwscr::S3::Client do
                 end
                 expect_file(client, bucket, key, content)
               end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  describe "allow to use your own awscr-s3 client" do
+    describe "#constructor" do
+      it "should use the client_provider if configured" do
+        with_native_awscr_s3_client do |awscr_s3_client|
+          call_count = 0
+          client_provider = ->(_force_new : Bool) do
+            call_count += 1
+            awscr_s3_client
+          end
+
+          client = EasyAwscr::S3::Client.new(client_provider: client_provider, region: "us-east-1", lazy_init: true)
+          call_count.should eq(0)
+
+          list1 = client.list_buckets
+          call_count.should eq(1)
+          list2 = client.list_buckets
+          call_count.should eq(2)
+
+          list1.buckets.should eq(list2.buckets)
+        end
+      end
+    end
+
+    describe "#from_native_client" do
+      it "should be support to wrap a single call" do
+        with_native_awscr_s3_client do |awscr_s3_client|
+          list1 = EasyAwscr::S3::Client.from_native_client(awscr_s3_client).list_buckets
+          list2 = EasyAwscr::S3::Client.from_native_client(awscr_s3_client).list_buckets
+          list1.buckets.should eq(list2.buckets)
+        end
+      end
+
+      it "should integrate with the normal client" do
+        with_client do |client|
+          with_temp_test_bucket(client) do |bucket|
+            with_native_awscr_s3_client do |awscr_s3_client|
+              native_client = EasyAwscr::S3::Client.from_native_client(awscr_s3_client)
+
+              client.head_bucket(bucket).should be_true
+              native_client.head_bucket(bucket).should be_true
             end
           end
         end

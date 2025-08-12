@@ -7,6 +7,13 @@ module EasyAwscr::S3
     @s3_client : Awscr::S3::Client?
     @client_factory : Internals::ConnectionPool?
 
+    # An optional hook for managing the native S3 client ("awscr-s3" library)
+    # yourself, instead of letting "easy-aws" handle it internally.
+    #
+    # The first parameter is a hint whether the connections or credentials should
+    # be refreshed. It is only a hint, and implementations are allowed to ignore it.
+    alias ClientProvider = Proc(Bool, Awscr::S3::Client)
+
     # This is a hard limit enforced by AWS for multipart uploads:
     # each part must be at least 5 MB.
     MINIMUM_PART_SIZE_5MB = 5242880
@@ -18,10 +25,16 @@ module EasyAwscr::S3
     def initialize(*,
                    @region = EasyAwscr::Config.default_region!,
                    @credential_provider = EasyAwscr::Config.default_credential_provider,
+                   @client_provider : ClientProvider? = nil,
                    @endpoint : String? = nil,
                    lazy_init = false)
       @mutex = Mutex.new(:unchecked)
       client unless lazy_init
+    end
+
+    # Converts an existing client from "awscr-s3" to use the "easy-awscr" client interface.
+    def self.from_native_client(native_client : Awscr::S3::Client) : self
+      new(client_provider: ->(_force_new : Bool) { native_client }, region: "us-east-1", lazy_init: false)
     end
 
     # Closes this client. If used again, a new connection will be opened.
@@ -288,6 +301,8 @@ module EasyAwscr::S3
     end
 
     private def client(*, force_new = false) : Awscr::S3::Client
+      @client_provider.try { |provider| return provider.call(force_new) }
+
       dead_client_factory = nil
       @mutex.synchronize do
         s3_client = @s3_client
