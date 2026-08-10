@@ -33,17 +33,26 @@ module EasyAwscr::S3::Internals
     protected def attach_signer(client, signer)
       if signer.is_a?(Awscr::Signer::Signers::V4)
         client.before_request do |req|
-          reset_headers(req)
+          reset_headers(req) # only for Crystal <1.21.0
           signer.as(Awscr::Signer::Signers::V4).sign(req, encode_path: false)
         end
       else
         client.before_request do |req|
-          reset_headers(req)
+          reset_headers(req) # only for Crystal <1.21.0
           signer.sign(req)
         end
       end
     end
 
+    # This hack is no longer needed in Crystal >=1.21.0. But removing it would
+    # break older Crystal versions, so we have to keep it for a while.
+    #
+    # Background:
+    # * https://github.com/crystal-lang/crystal/issues/16028
+    # * https://github.com/crystal-lang/crystal/pull/16064
+    #
+    # --- (old workaround for Crystal <1.21.0) ---
+    #
     # Workaround to avoid signing errors when requests have to be repeated
     # after a TCPSocket has to be reconnected.
     #
@@ -51,9 +60,11 @@ module EasyAwscr::S3::Internals
     # * https://github.com/taylorfinnell/awscr-signer/issues/56
     # * https://github.com/crystal-lang/crystal/issues/16028
     private def reset_headers(req)
-      req.headers.delete "Authorization"
-      req.headers.delete "X-Amz-Content-Sha256"
-      req.headers.delete "X-Amz-Date"
+      {% if Crystal::VERSION < "1.21.0" %}
+        req.headers.delete "Authorization"
+        req.headers.delete "X-Amz-Content-Sha256"
+        req.headers.delete "X-Amz-Date"
+      {% end %}
     end
 
     private def expired?(last_checked, now = Time.utc)
