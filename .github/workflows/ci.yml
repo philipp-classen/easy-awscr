@@ -17,25 +17,21 @@ jobs:
     # Setup copied from the aswscr-s3 project:
     # https://github.com/taylorfinnell/awscr-s3/blob/44d9da5cc6e1361a04df9c45b5765af322db0556/.github/workflows/test.yml#L26C1-L41C30
     services:
-      minio:
-        # https://stackoverflow.com/questions/60849745/how-can-i-run-a-command-in-github-action-service-containers
-        image: bitnami/minio:latest
-        env:
-          MINIO_ROOT_USER: admin
-          MINIO_ROOT_PASSWORD: password
+      # moto supports both S3 and CloudWatch
+      moto:
+        image: motoserver/moto:latest
         ports:
-          - 9000:9000
-        # https://github.com/orgs/community/discussions/26688
+          - 4566:5000
         options: >-
-          --health-cmd "curl -s http://localhost:9000/minio/health/live"
+          --health-cmd "curl -s http://localhost:5000/moto-api"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-          --name minio-server
+          --name moto-server
 
     steps:
       - name: Install Crystal
-        uses: oprypin/install-crystal@v1
+        uses: crystal-lang/install-crystal@v1
         with:
           crystal: ${{ matrix.crystal }}
 
@@ -49,12 +45,13 @@ jobs:
         run: shards install
 
       - name: Lint with Ameba
-        run: bin/ameba
+        run: crystal run lib/ameba/bin/ameba.cr
 
       - name: Run specs
         run: crystal spec --verbose --tag '~slow' --order random
         env:
-          EASY_AWSCR_SPEC_USE_MINIO: true
+          EASY_AWSCR_SPEC_USE_S3_MOCK: true
+          EASY_AWSCR_SPEC_USE_CLOUDWATCH_MOCK: true
 
 
   # Without Docker, tests can be still executed, but they will be crippled.
@@ -67,7 +64,7 @@ jobs:
 
     steps:
       - name: Install Crystal
-        uses: oprypin/install-crystal@v1
+        uses: crystal-lang/install-crystal@v1
         with:
           crystal: ${{ matrix.crystal }}
 
@@ -81,10 +78,7 @@ jobs:
         run: shards install
 
       - name: Lint with Ameba
-        run: bin/ameba
-
-      - name: Run specs
-        run: crystal spec --verbose --tag '~slow' --order random
+        run: crystal run lib/ameba/bin/ameba.cr
 
       - name: Run specs
         run: crystal spec --verbose --tag '~slow' --order random

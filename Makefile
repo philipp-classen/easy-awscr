@@ -7,10 +7,10 @@ test-all:
 	crystal spec --verbose --release --order random
 
 linter:
-	ameba
+	crystal run lib/ameba/bin/ameba.cr
 
 linter-fix:
-	ameba --fix
+	crystal run lib/ameba/bin/ameba.cr -- --fix
 
 format-check:
 	crystal tool format --check
@@ -18,8 +18,8 @@ format-check:
 format-apply:
 	crystal tool format
 
-start-minio:
-	docker run -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 -e "MINIO_ROOT_USER=admin" -e "MINIO_ROOT_PASSWORD=password" --rm  -it quay.io/minio/minio server /data --console-address ":9001"
+start-moto:
+	docker run -p 127.0.0.1:4566:5000 --rm -it motoserver/moto
 
 .PHONY: dist-clean
 dist-clean:

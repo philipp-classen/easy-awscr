@@ -2,7 +2,7 @@ require "aws-credentials"
 
 module EasyAwscr::Config
   class Provider
-    def initialize(@provider = Aws::Credentials::Providers.new([
+    def initialize(@provider : Aws::Credentials::Provider = Aws::Credentials::Providers.new([
                      Aws::Credentials::EnvProvider.new,
                      Aws::Credentials::SharedCredentialFileProvider.new,
                      Aws::Credentials::InstanceMetadataProvider.new,

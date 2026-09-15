@@ -13,9 +13,12 @@ dependencies:
   awscr-s3:
     github: taylorfinnell/awscr-s3
     commit: 38b76cd7a109001caa8ece02916b4e0bfc9bf7d8
+  awscr-cloudwatch:
+    github: philipp-classen/awscr-cloudwatch
 
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
+    version: ~> 1.7.0
 
 license: MIT

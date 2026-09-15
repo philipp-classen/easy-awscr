@@ -1,3 +1,3 @@
 require "./init"
 require "./config/*"
-require "./s3/*"
+require "./cloudwatch/*"

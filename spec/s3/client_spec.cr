@@ -7,27 +7,20 @@ record Api,
   region : String,
   endpoint : String? = nil
 
-def test_provider(access_key = "admin", secret_access_key = "password") : EasyAwscr::Config::Provider
-  EasyAwscr::Config::Provider.new(
-    Aws::Credentials::Providers.new([
-      Aws::Credentials::SimpleCredentials.new(access_key, secret_access_key).as(Aws::Credentials::Provider),
-    ])
-  )
-end
-
 def with_aws_api(& : Api -> Nil)
   found = 0
 
-  # Uses a sandboxed MinIO environment (https://github.com/minio/minio).
+  # Uses a local, S3-compatible mock (https://github.com/getmoto/moto).
   # Tip: you can start a local Docker instance by running:
-  # $ make start-minio
-  if env_set? "EASY_AWSCR_SPEC_USE_MINIO"
+  # $ make start-moto
+  # AWS_ENDPOINT_URL points the specs at a different mock (default: http://127.0.0.1:4566).
+  if env_set? "EASY_AWSCR_SPEC_USE_S3_MOCK"
     found += 1
     yield Api.new(
-      id: :minio,
+      id: :mock,
       credential_provider: test_provider("admin", "password"),
-      region: "unused",
-      endpoint: "http://127.0.0.1:9000"
+      region: "us-east-1",
+      endpoint: ENV.fetch("AWS_ENDPOINT_URL", "http://127.0.0.1:4566")
     )
   end
 
@@ -125,11 +118,11 @@ class Testfile
   end
 
   def self.byte(size : Int32 | Int64) : self
-    self.new(size.to_i64)
+    new(size.to_i64)
   end
 
   def self.kilobyte(size : Int32 | Int64) : self
-    self.new(1024_i64 * size)
+    new(1024_i64 * size)
   end
 
   def self.megabyte(size : Int32 | Int64) : self
