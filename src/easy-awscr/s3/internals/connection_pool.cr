@@ -2,7 +2,7 @@ require "http/client"
 
 module EasyAwscr::S3::Internals
   class ConnectionPool < Awscr::S3::HttpClientFactory
-    getter created_at
+    getter created_at : Time
 
     def initialize(*, @max_ttl : Time::Span? = 5.minutes, @max_size = 128)
       @pool = Hash(Fiber, {HTTP::Client, Time}).new
@@ -90,7 +90,9 @@ module EasyAwscr::S3::Internals
 
       current_fiber = Fiber.current
       @mutex.synchronize do
-        unless @closed
+        if @closed
+          dead1 = client # the pool closed while the request was in flight
+        else
           @pool.first_key?.try do |fiber|
             dead1 = @pool.shift[1][0] if fiber.dead? || expired?(@pool.first_value[1], now)
             @pool.delete(current_fiber).try { |old_client, _| dead2 = old_client }
