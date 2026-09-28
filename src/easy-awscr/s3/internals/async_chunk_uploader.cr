@@ -47,19 +47,17 @@ module EasyAwscr::S3
         end
 
         spawn do
-          begin
-            resp = retry do
-              buffer.rewind
-              @client.upload_part(@bucket, @object, @upload_id, part_number, buffer)
-            end
-            @jobs_finished.add(1)
-            @job_results.send(JobResult.new(resp, buffer))
-          rescue e
-            if @job_results.close
-              Log.error(exception: e) { "Unable to upload object s3://#{@bucket}/#{@object}" }
-            else
-              Log.info { "Unable to upload object s3://#{@bucket}/#{@object} (see previous errors)" }
-            end
+          resp = retry do
+            buffer.rewind
+            @client.upload_part(@bucket, @object, @upload_id, part_number, buffer)
+          end
+          @jobs_finished.add(1)
+          @job_results.send(JobResult.new(resp, buffer))
+        rescue e
+          if @job_results.close
+            Log.error(exception: e) { "Unable to upload object s3://#{@bucket}/#{@object}" }
+          else
+            Log.info { "Unable to upload object s3://#{@bucket}/#{@object} (see previous errors)" }
           end
         end
 
