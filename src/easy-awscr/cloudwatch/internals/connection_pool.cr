@@ -7,7 +7,12 @@ module EasyAwscr::CloudWatch::Internals
   class ConnectionPool < Awscr::CloudWatch::DefaultHttpClientFactory
     getter created_at : Time
 
-    def initialize(*, @max_ttl : Time::Span? = 5.minutes, @max_size = 128)
+    # Not confirmed by official sources, but in tests it took around 5 seconds
+    # until CloudWatch closes an idle connection. That means, we need to stay
+    # below that number.
+    DEFAULT_MAX_TTL = 3.seconds
+
+    def initialize(*, @max_ttl : Time::Span? = DEFAULT_MAX_TTL, @max_size = 128)
       super()
       @pool = Hash(Fiber, {HTTP::Client, Time}).new
       @mutex = Mutex.new(:unchecked)
