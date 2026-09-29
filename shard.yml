@@ -15,6 +15,7 @@ dependencies:
     commit: 38b76cd7a109001caa8ece02916b4e0bfc9bf7d8
   awscr-cloudwatch:
     github: philipp-classen/awscr-cloudwatch
+    version: 0.1.0
 
 development_dependencies:
   ameba:
