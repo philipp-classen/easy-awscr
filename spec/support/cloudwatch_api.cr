@@ -49,6 +49,8 @@ end
 # while a spec subclasses Client, see FlakyClient):
 #
 #   def with_cloudwatch_client(& : EasyAwscr::CloudWatch::Client -> Nil)
+#
+# (See https://github.com/crystal-lang/crystal/issues/15200#issuecomment-5881133360)
 def with_cloudwatch_client(&)
   with_cloudwatch_api do |api|
     client = EasyAwscr::CloudWatch::Client.new(
