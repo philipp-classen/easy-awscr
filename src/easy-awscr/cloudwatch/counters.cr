@@ -28,8 +28,8 @@ module EasyAwscr::CloudWatch
                    @client : Client = Client.new,
                    @flush_interval : Time::Span? = 1.minute,
                    @dimensions : Hash(String, String)? = nil)
-      @counts = Hash(String, Int64).new
-      @mutex = Mutex.new
+      @counts = Hash(String, Int64).new(0_i64)
+      @mutex = Mutex.new(:unchecked)
       @closed = Atomic(Bool).new(false)
 
       if flush_interval = @flush_interval
@@ -60,7 +60,7 @@ module EasyAwscr::CloudWatch
     private def upload(*, final : Bool = false) : Nil
       counts = @mutex.synchronize do
         return if @closed.get && !final
-        @counts.tap { @counts = Hash(String, Int64).new }
+        @counts.tap { @counts = Hash(String, Int64).new(0_i64) }
       end
       return if counts.empty?
 
@@ -106,7 +106,7 @@ module EasyAwscr::CloudWatch
     end
 
     private def add(name : String, count : Int64) : Nil
-      @mutex.synchronize { @counts[name] = (@counts[name]? || 0_i64) + count }
+      @mutex.synchronize { @counts[name] += count }
     end
 
     private def flush_loop(flush_interval : Time::Span)
