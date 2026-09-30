@@ -77,7 +77,7 @@ end
 def counter_sum(client : EasyAwscr::CloudWatch::Client, namespace : String, metric_name : String,
                 dimensions : Hash(String, String)? = nil) : Float64
   client.get_metric_statistics(namespace, metric_name,
-    start_time: Time.utc - 5.minutes, end_time: Time.utc + 5.minutes, period: 60,
+    start_time: Time.utc - 5.minutes, end_time: Time.utc + 5.minutes, period: 1.minute,
     statistics: ["Sum", "SampleCount"], dimensions: dimensions
   ).datapoints.sum { |datapoint| datapoint.sum || 0.0 }
 end

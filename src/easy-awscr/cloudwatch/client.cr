@@ -27,6 +27,10 @@ module EasyAwscr::CloudWatch
     # the SSL context (see https://github.com/crystal-lang/crystal/issues/15419).
     DEFAULT_POOL_REFRESH_INTERVAL = 24.hours
 
+    # AWS accepts at most 500 queries per GetMetricData request:
+    # https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html
+    MAX_QUERIES_PER_REQUEST = 500
+
     def initialize(*,
                    @region = EasyAwscr::Config.default_region!,
                    @credential_provider = EasyAwscr::Config.default_credential_provider,
@@ -80,6 +84,50 @@ module EasyAwscr::CloudWatch
 
     def get_metric_data(queries : Array(Awscr::CloudWatch::MetricDataQuery), **options)
       try_with_refresh &.metrics.get_metric_data(queries, **options)
+    end
+
+    # Like `get_metric_data`, but follows the pages to the end and yields every result (one per query and page).
+    # Points come oldest first unless *scan_by* says otherwise, and memory stays flat also for long time ranges.
+    def each_metric_data(queries : Array(Awscr::CloudWatch::MetricDataQuery), *,
+                         start_time : Time, end_time : Time, scan_by : String = "TimestampAscending",
+                         & : Awscr::CloudWatch::Response::MetricDataResult ->) : Nil
+      next_token = nil
+      loop do
+        page = get_metric_data(queries, start_time: start_time, end_time: end_time, scan_by: scan_by, next_token: next_token)
+        page.metric_data_results.each { |result| yield result }
+        next_token = page.next_token
+        break unless next_token
+      end
+    end
+
+    # The *stat* (`Sum`, `Average`, `p99`, ...) of every metric per *period*.
+    # Yields (metric, time, value) for every data point, in time order per metric.
+    # Works for any number of metrics and any time range: 500 metrics per request, all pages followed.
+    #
+    # Old data is kept in coarse resolution only. Use a period that is a multiple of 5 minutes for start times
+    # older than 15 days, and a multiple of 1 hour for start times older than 63 days, or those points come back empty.
+    # The periods start at *start_time*, so start on a full hour to get calendar hours.
+    #
+    # ```
+    # metrics = ["requests.total", "requests.errors"].map { |name| Awscr::CloudWatch::Metric.new("MyApp", name) }
+    # client.each_datapoint(metrics, stat: "Sum", period: 1.hour, start_time: Time.utc - 7.days, end_time: Time.utc) do |metric, time, value|
+    #   puts "#{metric.metric_name} #{time}: #{value}"
+    # end
+    # ```
+    def each_datapoint(metrics : Array(Awscr::CloudWatch::Metric), *, stat : String, period : Time::Span,
+                       start_time : Time, end_time : Time, & : Awscr::CloudWatch::Metric, Time, Float64 ->) : Nil
+      metrics.each_slice(MAX_QUERIES_PER_REQUEST) do |batch|
+        # A metric name is not a valid query id, so the id carries the index into the batch.
+        queries = batch.map_with_index do |metric, i|
+          Awscr::CloudWatch::MetricDataQuery.new("m#{i}", metric_stat: Awscr::CloudWatch::MetricStat.new(metric, period, stat))
+        end
+        each_metric_data(queries, start_time: start_time, end_time: end_time) do |result|
+          metric = batch[result.id.lchop("m").to_i]
+          result.timestamps.zip(result.values) do |time, value|
+            yield metric, time, value
+          end
+        end
+      end
     end
 
     def get_metric_widget_image(metric_widget : String)

@@ -11,12 +11,27 @@ describe EasyAwscr::CloudWatch::Client do
     end
   end
 
+  it "reads a time series with each_datapoint" do
+    with_cloudwatch_client do |client|
+      with_temp_namespace do |namespace|
+        client.put_counter(namespace, "requests.total", 3)
+        wait_for_counter(client, namespace, "requests.total", 3)
+
+        metric = Awscr::CloudWatch::Metric.new(namespace, "requests.total")
+        values = [] of Float64
+        client.each_datapoint([metric], stat: "Sum", period: 1.minute,
+          start_time: Time.utc - 5.minutes, end_time: Time.utc + 5.minutes) { |_, _, value| values << value }
+        values.sum.should eq 3.0
+      end
+    end
+  end
+
   it "creates, lists and deletes alarms" do
     with_cloudwatch_client do |client|
       with_temp_namespace do |namespace|
         alarm_name = "test-easy-awscr-tmp-alarm-#{UUID.random}"
         client.put_metric_alarm(alarm_name,
-          namespace: namespace, metric_name: "requests.errors", statistic: "Sum", period: 60,
+          namespace: namespace, metric_name: "requests.errors", statistic: "Sum", period: 1.minute,
           evaluation_periods: 3, threshold: 100, comparison_operator: "GreaterThanThreshold",
           actions_enabled: false)
         begin

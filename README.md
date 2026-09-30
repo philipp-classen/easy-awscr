@@ -17,7 +17,7 @@ Apart from the low-level API, there are some higher-level APIs provided:
 * S3
   - support for streaming uploads
 * CloudWatch
-  - period uploads of aggregated counters
+  - periodic uploads of aggregated counters
 
 ## Installation
 
@@ -102,11 +102,18 @@ require "easy-awscr/cloudwatch"
 client = EasyAwscr::CloudWatch::Client.new
 
 stats = client.get_metric_statistics("MyApp", "requests.total",
-  start_time: Time.utc - 1.hour, end_time: Time.utc, period: 300, statistics: ["Sum"])
+  start_time: Time.utc - 1.hour, end_time: Time.utc, period: 5.minutes, statistics: ["Sum"])
 stats.datapoints.each { |dp| puts "#{dp.timestamp}: #{dp.sum}" }
 
+# Time series for many metrics over any time range. Paging is done for you and the points come one by one.
+metrics = ["requests.total", "requests.errors"].map { |name| Awscr::CloudWatch::Metric.new("MyApp", name) }
+client.each_datapoint(metrics, stat: "Sum", period: 1.hour, start_time: Time.utc - 30.days, end_time: Time.utc) do |metric, time, value|
+  puts "#{metric.metric_name} #{time}: #{value}"
+end
+# each_metric_data does the same for your own MetricDataQuery list (e.g. metric math).
+
 client.put_metric_alarm("MyApp-HighErrorRate",
-  namespace: "MyApp", metric_name: "requests.errors", statistic: "Sum", period: 60,
+  namespace: "MyApp", metric_name: "requests.errors", statistic: "Sum", period: 1.minute,
   evaluation_periods: 3, threshold: 100, comparison_operator: "GreaterThanThreshold")
 
 # On top of that, Counters provides a higher-level API:
